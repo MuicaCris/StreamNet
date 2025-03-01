@@ -1,0 +1,13 @@
+3/1/2025 11:42:36 AM: Server WebSocket pornit la http://localhost:5050/ws/
+3/1/2025 11:42:43 AM: Client conectat.
+3/1/2025 11:42:48 AM: Mesaj primit: 
+3/1/2025 11:43:03 AM: Mesaj primit: 
+3/1/2025 11:43:19 AM: Client deconectat.
+3/1/2025 12:00:16 PM: ✅ Server WebSocket pornit la http://localhost:5050/ws/
+3/1/2025 12:00:27 PM: 🔵 Client 6d54ae7b-b446-4f86-95f0-2386cd804e9d conectat.
+3/1/2025 12:00:47 PM: 📩 Mesaj text de la 6d54ae7b-b446-4f86-95f0-2386cd804e9d: 
+3/1/2025 12:01:41 PM: ✅ Server WebSocket pornit la http://localhost:5050/ws/
+3/1/2025 12:01:43 PM: 🔵 Client conectat.
+3/1/2025 12:03:30 PM: Server WebSocket pornit la http://localhost:5050/ws/
+3/1/2025 12:04:48 PM: Server WebSocket pornit la http://localhost:5050/ws/
+3/1/2025 12:06:20 PM: Server WebSocket pornit la http://localhost:5050/ws/

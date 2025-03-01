@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "Z2gXiIh5+BQ+SORF7GDXk1aLM4FKm2GNx5LKuFgTZxQ=",
+  "Source": "StreamNetServer",
+  "BasePath": "_content/StreamNetServer",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
