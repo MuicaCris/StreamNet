@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("StreamNetServer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8abfd9580d9b8c75d73956f543f0bb4c8589b0fe")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0fea383a404d3a9432d792ac539f0ce905c525c3")]
 [assembly: System.Reflection.AssemblyProductAttribute("StreamNetServer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("StreamNetServer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

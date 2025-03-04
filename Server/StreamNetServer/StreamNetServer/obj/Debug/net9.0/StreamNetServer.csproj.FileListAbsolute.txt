@@ -32,3 +32,9 @@ C:\Users\viper\OneDrive\Desktop\Facultate\DAM\Proiect\StreamNet\Server\StreamNet
 C:\Users\viper\OneDrive\Desktop\Facultate\DAM\Proiect\StreamNet\Server\StreamNetServer\StreamNetServer\obj\Debug\net9.0\StreamNetServer.pdb
 C:\Users\viper\OneDrive\Desktop\Facultate\DAM\Proiect\StreamNet\Server\StreamNetServer\StreamNetServer\obj\Debug\net9.0\StreamNetServer.genruntimeconfig.cache
 C:\Users\viper\OneDrive\Desktop\Facultate\DAM\Proiect\StreamNet\Server\StreamNetServer\StreamNetServer\obj\Debug\net9.0\ref\StreamNetServer.dll
+C:\Users\viper\OneDrive\Desktop\Facultate\DAM\Proiect\StreamNet\Server\StreamNetServer\StreamNetServer\bin\Debug\net9.0\System.Data.SqlClient.dll
+C:\Users\viper\OneDrive\Desktop\Facultate\DAM\Proiect\StreamNet\Server\StreamNetServer\StreamNetServer\bin\Debug\net9.0\runtimes\win-arm64\native\sni.dll
+C:\Users\viper\OneDrive\Desktop\Facultate\DAM\Proiect\StreamNet\Server\StreamNetServer\StreamNetServer\bin\Debug\net9.0\runtimes\win-x64\native\sni.dll
+C:\Users\viper\OneDrive\Desktop\Facultate\DAM\Proiect\StreamNet\Server\StreamNetServer\StreamNetServer\bin\Debug\net9.0\runtimes\win-x86\native\sni.dll
+C:\Users\viper\OneDrive\Desktop\Facultate\DAM\Proiect\StreamNet\Server\StreamNetServer\StreamNetServer\bin\Debug\net9.0\runtimes\unix\lib\net8.0\System.Data.SqlClient.dll
+C:\Users\viper\OneDrive\Desktop\Facultate\DAM\Proiect\StreamNet\Server\StreamNetServer\StreamNetServer\bin\Debug\net9.0\runtimes\win\lib\net8.0\System.Data.SqlClient.dll
