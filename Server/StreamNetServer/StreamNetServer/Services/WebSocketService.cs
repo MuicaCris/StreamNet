@@ -2,13 +2,14 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
+using System.IdentityModel.Tokens.Jwt;
 using StreamNetServer.Utils;
 
 namespace StreamNetServer.Services;
 
 public class WebSocketService
 {
-    private readonly ConcurrentDictionary<WebSocket, bool> _clients = new();
+    private readonly ConcurrentDictionary<WebSocket, string> _clients = new(); // Clienți autentificați (WebSocket -> username)
 
     public async Task Start(string url)
     {
@@ -22,12 +23,31 @@ public class WebSocketService
             var context = await server.GetContextAsync();
             if (context.Request.IsWebSocketRequest)
             {
+                if (!context.Request.Headers.AllKeys.Contains("Authorization"))
+                {
+                    Logger.Log("Conexiune WebSocket refuzată: Lipsă token JWT");
+                    context.Response.StatusCode = 401;
+                    context.Response.Close();
+                    continue;
+                }
+
+                string token = context.Request.Headers["Authorization"]?.Replace("Bearer ", "");
+                string username = ValidateJWT(token);
+
+                if (string.IsNullOrEmpty(username))
+                {
+                    Logger.Log("Conexiune WebSocket refuzată: Token invalid");
+                    context.Response.StatusCode = 403;
+                    context.Response.Close();
+                    continue;
+                }
+
                 var wsContext = await context.AcceptWebSocketAsync(null);
                 WebSocket socket = wsContext.WebSocket;
-                _clients.TryAdd(socket, true);
-                Logger.Log("🔵 Client conectat.");
+                _clients.TryAdd(socket, username);
+                Logger.Log($"{username} s-a conectat.");
 
-                _ = HandleWebSocket(socket);
+                _ = HandleWebSocket(socket, username);
             }
             else
             {
@@ -38,7 +58,7 @@ public class WebSocketService
         }
     }
 
-    private async Task HandleWebSocket(WebSocket socket)
+    private async Task HandleWebSocket(WebSocket socket, string username)
     {
         var buffer = new byte[1024 * 1024];
 
@@ -49,30 +69,28 @@ public class WebSocketService
                 WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
-                    Logger.Log("Client deconectat.");
+                    Logger.Log($"{username} s-a deconectat.");
                     _clients.TryRemove(socket, out _);
                     await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
                 }
                 else if (result.MessageType == WebSocketMessageType.Text)
                 {
                     var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    Logger.Log($"Mesaj primit: {message}");
+                    Logger.Log($"{username}: {message}");
 
-                    // Trimite raspuns catre client
-                    var response = "Răspuns de la server: " + message;
-                    var responseBytes = Encoding.UTF8.GetBytes(response);
-                    await socket.SendAsync(new ArraySegment<byte>(responseBytes), WebSocketMessageType.Text, true, CancellationToken.None);
+                    // Transmite mesajul tuturor clienților
+                    await BroadcastTextMessage($"{username}: {message}");
                 }
                 else if (result.MessageType == WebSocketMessageType.Binary)
                 {
-                    Logger.Log($"📦 {result.Count} bytes primiți (binary)");
-                    await BroadcastData(buffer, result.Count);
+                    Logger.Log($"{result.Count} bytes primiți de la {username} (binary)");
+                    await BroadcastBinaryData(buffer, result.Count);
                 }
             }
         }
         catch (Exception ex)
         {
-            Logger.Log($"Eroare conexiune WebSocket: {ex.Message}");
+            Logger.Log($"Eroare WebSocket ({username}): {ex.Message}");
         }
         finally
         {
@@ -84,7 +102,26 @@ public class WebSocketService
         }
     }
 
-    private async Task BroadcastData(byte[] data, int count)
+    private async Task BroadcastTextMessage(string message)
+    {
+        var data = Encoding.UTF8.GetBytes(message);
+        foreach (var client in _clients.Keys)
+        {
+            if (client.State == WebSocketState.Open)
+            {
+                try
+                {
+                    await client.SendAsync(new ArraySegment<byte>(data), WebSocketMessageType.Text, true, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Eroare trimitere mesaj: {ex.Message}");
+                }
+            }
+        }
+    }
+
+    private async Task BroadcastBinaryData(byte[] data, int count)
     {
         foreach (var client in _clients.Keys)
         {
@@ -93,13 +130,27 @@ public class WebSocketService
                 try
                 {
                     await client.SendAsync(new ArraySegment<byte>(data, 0, count), WebSocketMessageType.Binary, true, CancellationToken.None);
-                    Logger.Log($"Mesaj transmis către client ({count} bytes).");
+                    Logger.Log($"Transmis {count} bytes către clienți.");
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log($"Eroare la trimiterea datelor: {ex.Message}");
+                    Logger.Log($"Eroare trimitere date binare: {ex.Message}");
                 }
             }
+        }
+    }
+
+    private string ValidateJWT(string token)
+    {
+        try
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+            return jwtToken.Claims.FirstOrDefault(c => c.Type == "username")?.Value;
+        }
+        catch
+        {
+            return null;
         }
     }
 }
