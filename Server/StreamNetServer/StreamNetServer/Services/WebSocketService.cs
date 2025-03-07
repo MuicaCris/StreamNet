@@ -25,13 +25,13 @@ public class WebSocketService
                 var wsContext = await context.AcceptWebSocketAsync(null);
                 WebSocket socket = wsContext.WebSocket;
                 _clients.TryAdd(socket, true);
-                Logger.Log("🔵 Client conectat.");
+                Logger.Log("Client conectat.");
 
                 _ = HandleWebSocket(socket);
             }
             else
             {
-                Logger.Log("Conexiune HTTP refuzată (nu este WebSocket)");
+                Logger.Log("Conexiune HTTP refuzata (nu este WebSocket)");
                 context.Response.StatusCode = 400;
                 context.Response.Close();
             }
@@ -59,13 +59,13 @@ public class WebSocketService
                     Logger.Log($"Mesaj primit: {message}");
 
                     // Trimite raspuns catre client
-                    var response = "Răspuns de la server: " + message;
+                    var response = "Raspuns de la server: " + message;
                     var responseBytes = Encoding.UTF8.GetBytes(response);
                     await socket.SendAsync(new ArraySegment<byte>(responseBytes), WebSocketMessageType.Text, true, CancellationToken.None);
                 }
                 else if (result.MessageType == WebSocketMessageType.Binary)
                 {
-                    Logger.Log($"📦 {result.Count} bytes primiți (binary)");
+                    Logger.Log($"{result.Count} bytes primiți (binary)");
                     await BroadcastData(buffer, result.Count);
                 }
             }
@@ -93,7 +93,7 @@ public class WebSocketService
                 try
                 {
                     await client.SendAsync(new ArraySegment<byte>(data, 0, count), WebSocketMessageType.Binary, true, CancellationToken.None);
-                    Logger.Log($"Mesaj transmis către client ({count} bytes).");
+                    Logger.Log($"Mesaj transmis catre client ({count} bytes).");
                 }
                 catch (Exception ex)
                 {
