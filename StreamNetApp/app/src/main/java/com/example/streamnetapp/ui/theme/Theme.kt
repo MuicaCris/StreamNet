@@ -1,58 +1,46 @@
 package com.example.streamnetapp.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+private val StreamNetColorScheme = darkColorScheme(
+    primary = PurplePrimary,
+    secondary = PurpleSecondary,
+    tertiary = AccentGreen,
+    background = DarkBackground,
+    surface = DarkSurface,
+    onPrimary = TextWhite,
+    onSecondary = TextWhite,
+    onTertiary = TextWhite,
+    onBackground = TextWhite,
+    onSurface = TextWhite
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    primary = PurplePrimary,
+    secondary = PurpleSecondary,
+    tertiary = AccentGreen,
+    background = LightBackground,
+    surface = LightSurface,
+    onPrimary = TextBlack,
+    onSecondary = TextBlack,
+    onTertiary = TextBlack,
+    onBackground = TextBlack,
+    onSurface = TextBlack
 )
 
 @Composable
-fun StreamNetAppTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+fun StreamNetTheme(
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    val colorScheme = if (darkTheme) StreamNetColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = StreamNetTypography,
         content = content
     )
 }

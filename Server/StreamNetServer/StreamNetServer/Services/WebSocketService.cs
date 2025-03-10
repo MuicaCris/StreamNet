@@ -1,105 +1,50 @@
-using System.Collections.Concurrent;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
-using StreamNetServer.Utils;
 
-namespace StreamNetServer.Services;
-
-public class WebSocketService
+namespace StreamNetServer.Services
 {
-    private readonly ConcurrentDictionary<WebSocket, bool> _clients = new();
-
-    public async Task Start(string url)
+    public class WebSocketService
     {
-        HttpListener server = new HttpListener();
-        server.Prefixes.Add(url);
-        server.Start();
-        Logger.Log($"Server WebSocket pornit la {url}");
-
-        while (true)
+        public async void Start(string url)
         {
-            var context = await server.GetContextAsync();
-            if (context.Request.IsWebSocketRequest)
-            {
-                var wsContext = await context.AcceptWebSocketAsync(null);
-                WebSocket socket = wsContext.WebSocket;
-                _clients.TryAdd(socket, true);
-                Logger.Log("Client conectat.");
+            HttpListener listener = new HttpListener();
+            listener.Prefixes.Add(url);
+            listener.Start();
+            Console.WriteLine($"Server WebSocket pornit pe {url}");
 
-                _ = HandleWebSocket(socket);
-            }
-            else
+            while (true)
             {
-                Logger.Log("Conexiune HTTP refuzata (nu este WebSocket)");
-                context.Response.StatusCode = 400;
-                context.Response.Close();
-            }
-        }
-    }
-
-    private async Task HandleWebSocket(WebSocket socket)
-    {
-        var buffer = new byte[1024 * 1024];
-
-        try
-        {
-            while (socket.State == WebSocketState.Open)
-            {
-                WebSocketReceiveResult result = await socket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
-                if (result.MessageType == WebSocketMessageType.Close)
+                HttpListenerContext context = await listener.GetContextAsync();
+                if (context.Request.IsWebSocketRequest)
                 {
-                    Logger.Log("Client deconectat.");
-                    _clients.TryRemove(socket, out _);
-                    await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
+                    HttpListenerWebSocketContext wsContext = await context.AcceptWebSocketAsync(null);
+                    _ = HandleWebSocketConnection(wsContext.WebSocket);
                 }
-                else if (result.MessageType == WebSocketMessageType.Text)
+                else
                 {
-                    var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    Logger.Log($"Mesaj primit: {message}");
-
-                    // Trimite raspuns catre client
-                    var response = "Raspuns de la server: " + message;
-                    var responseBytes = Encoding.UTF8.GetBytes(response);
-                    await socket.SendAsync(new ArraySegment<byte>(responseBytes), WebSocketMessageType.Text, true, CancellationToken.None);
-                }
-                else if (result.MessageType == WebSocketMessageType.Binary)
-                {
-                    Logger.Log($"{result.Count} bytes primiți (binary)");
-                    await BroadcastData(buffer, result.Count);
+                    context.Response.StatusCode = 400;
+                    context.Response.Close();
                 }
             }
         }
-        catch (Exception ex)
-        {
-            Logger.Log($"Eroare conexiune WebSocket: {ex.Message}");
-        }
-        finally
-        {
-            _clients.TryRemove(socket, out _);
-            if (socket.State == WebSocketState.Open)
-            {
-                await socket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closed", CancellationToken.None);
-            }
-        }
-    }
 
-    private async Task BroadcastData(byte[] data, int count)
-    {
-        foreach (var client in _clients.Keys)
+        private async Task HandleWebSocketConnection(WebSocket webSocket)
         {
-            if (client.State == WebSocketState.Open)
+            byte[] buffer = new byte[1024];
+
+            while (webSocket.State == WebSocketState.Open)
             {
-                try
-                {
-                    await client.SendAsync(new ArraySegment<byte>(data, 0, count), WebSocketMessageType.Binary, true, CancellationToken.None);
-                    Logger.Log($"Mesaj transmis catre client ({count} bytes).");
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"Eroare la trimiterea datelor: {ex.Message}");
-                }
+                WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                string receivedMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                Console.WriteLine($"Mesaj primit: {receivedMessage}");
+
+                string responseMessage = $"Server: {receivedMessage}";
+                byte[] responseBuffer = Encoding.UTF8.GetBytes(responseMessage);
+                await webSocket.SendAsync(new ArraySegment<byte>(responseBuffer), WebSocketMessageType.Text, true, CancellationToken.None);
             }
+
+            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Conexiune închisă", CancellationToken.None);
         }
     }
 }

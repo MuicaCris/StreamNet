@@ -18,3 +18,17 @@
 3/7/2025 6:06:42 PM: Mesaj primit: 
 3/7/2025 6:07:23 PM: Server WebSocket pornit la http://localhost:5050/ws/
 3/7/2025 6:07:26 PM: Client conectat.
+3/7/2025 6:46:00 PM: Server WebSocket pornit la http://localhost:5050/ws/
+3/7/2025 6:46:06 PM: Client conectat.
+3/7/2025 6:52:34 PM: Conexiune HTTP refuzata (nu este WebSocket)
+3/7/2025 6:52:54 PM: Conexiune HTTP refuzata (nu este WebSocket)
+3/7/2025 6:53:32 PM: Client deconectat.
+3/7/2025 6:55:14 PM: Server WebSocket pornit la http://localhost:5050/ws/
+3/7/2025 6:55:16 PM: Client conectat.
+3/7/2025 7:01:31 PM: Mesaj primit: 
+3/7/2025 7:02:12 PM: Server WebSocket pornit la http://localhost:5050/ws/
+3/7/2025 7:02:14 PM: Client conectat.
+3/7/2025 7:02:16 PM: Mesaj primit: kurwa tim de ce nu merge
+3/7/2025 7:03:32 PM: Client deconectat.
+3/10/2025 12:19:49 PM: Server WebSocket pornit la http://localhost:5050/ws/
+3/10/2025 12:40:34 PM: Server WebSocket pornit la http://localhost:5050/ws/

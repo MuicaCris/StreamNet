@@ -3,45 +3,40 @@ package com.example.streamnetapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.streamnetapp.ui.theme.StreamNetAppTheme
+import androidx.compose.runtime.*
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.streamnetapp.ui.LiveStreamUI
+import com.example.streamnetapp.ui.LoginScreen
+import com.example.streamnetapp.ui.MainMenu
+import com.example.streamnetapp.ui.SettingsMenu
+import com.example.streamnetapp.ui.SignupScreen
+import com.example.streamnetapp.ui.theme.StreamNetTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
-            StreamNetAppTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+            val isDarkMode = remember { mutableStateOf(true)}
+
+            StreamNetTheme(darkTheme = isDarkMode.value) {
+                MainApp(isDarkMode)
             }
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+fun MainApp(isDarkMode: MutableState<Boolean>) {
+    val navController = rememberNavController()
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    StreamNetAppTheme {
-        Greeting("Android")
+    NavHost(navController = navController, startDestination = "mainMenu") {
+        composable("mainMenu") { MainMenu(navController) }
+        composable("liveStream") { LiveStreamUI(isDarkMode) }
+        composable ("settingsMenu") { SettingsMenu(isDarkMode) }
+        composable ("loginMenu") { LoginScreen(navController) }
+        composable ("signupMenu") { SignupScreen(navController) }
     }
 }
+
