@@ -12,17 +12,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.material3.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.example.streamnetapp.ui.theme.StreamNetTheme
 
 @Composable
-fun LiveStreamUI(isDarkMode: MutableState<Boolean>) {
+fun LiveStreamUI() {
     var isStreaming by remember { mutableStateOf(false) }
     val chatMessages = remember { mutableStateListOf("Welcome to the stream!") }
 
-    // Context și lifecycle owner necesare pentru CameraX
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
 
     Column(
@@ -31,7 +28,6 @@ fun LiveStreamUI(isDarkMode: MutableState<Boolean>) {
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
-        // Video Preview cu CameraX
         Spacer(modifier = Modifier.height(32.dp))
 
         Surface(
@@ -43,21 +39,17 @@ fun LiveStreamUI(isDarkMode: MutableState<Boolean>) {
             AndroidView(
                 factory = { ctx ->
                     PreviewView(ctx).apply {
-                        // Inițializează CameraX
                         val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
                         cameraProviderFuture.addListener({
                             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-                            // Configurare preview
                             val preview = androidx.camera.core.Preview.Builder().build().also { preview ->
                                 preview.setSurfaceProvider(surfaceProvider)
                             }
 
-                            // Selectează camera din spate
                             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
 
                             try {
-                                // Eliberează resursele anterioare și lansează camera
                                 cameraProvider.unbindAll()
                                 cameraProvider.bindToLifecycle(
                                     lifecycleOwner,
@@ -75,7 +67,6 @@ fun LiveStreamUI(isDarkMode: MutableState<Boolean>) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Butoane pentru control
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly

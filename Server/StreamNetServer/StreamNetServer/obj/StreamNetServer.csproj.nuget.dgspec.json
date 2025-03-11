@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\viper\\OneDrive\\Desktop\\Facultate\\DAM\\Proiect\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj": {}
+    "C:\\Users\\viper\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj": {}
   },
   "projects": {
-    "C:\\Users\\viper\\OneDrive\\Desktop\\Facultate\\DAM\\Proiect\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj": {
+    "C:\\Users\\viper\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\viper\\OneDrive\\Desktop\\Facultate\\DAM\\Proiect\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj",
+        "projectUniqueName": "C:\\Users\\viper\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj",
         "projectName": "StreamNetServer",
-        "projectPath": "C:\\Users\\viper\\OneDrive\\Desktop\\Facultate\\DAM\\Proiect\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj",
+        "projectPath": "C:\\Users\\viper\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj",
         "packagesPath": "C:\\Users\\viper\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\viper\\OneDrive\\Desktop\\Facultate\\DAM\\Proiect\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\obj\\",
+        "outputPath": "C:\\Users\\viper\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -50,9 +50,21 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "dependencies": {
+            "BCrypt.Net-Next": {
+              "target": "Package",
+              "version": "[4.0.3, )"
+            },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
               "version": "[9.0.2, )"
+            },
+            "Microsoft.Data.SqlClient": {
+              "target": "Package",
+              "version": "[6.0.1, )"
+            },
+            "System.Data.SqlClient": {
+              "target": "Package",
+              "version": "[4.9.0, )"
             }
           },
           "imports": [

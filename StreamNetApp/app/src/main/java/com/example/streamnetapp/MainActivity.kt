@@ -33,7 +33,7 @@ fun MainApp(isDarkMode: MutableState<Boolean>) {
 
     NavHost(navController = navController, startDestination = "mainMenu") {
         composable("mainMenu") { MainMenu(navController) }
-        composable("liveStream") { LiveStreamUI(isDarkMode) }
+        composable("liveStream") { LiveStreamUI() }
         composable ("settingsMenu") { SettingsMenu(isDarkMode) }
         composable ("loginMenu") { LoginScreen(navController) }
         composable ("signupMenu") { SignupScreen(navController) }

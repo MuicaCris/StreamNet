@@ -32,7 +32,7 @@ fun MainMenu(navController: androidx.navigation.NavController) {
                         active = isSearchActive,
                         onActiveChange = { isSearchActive = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Caută...") },
+                        placeholder = { Text("Caută...", color = MaterialTheme.colorScheme.onBackground) },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Search,

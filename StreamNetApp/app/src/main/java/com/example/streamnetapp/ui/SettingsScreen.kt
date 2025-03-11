@@ -117,7 +117,6 @@ fun SettingsMenu(isDarkMode: MutableState<Boolean>) {
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Buton deconectare
         Button(
             onClick = { /* Logica de deconectare */ },
             colors = ButtonDefaults.buttonColors(
