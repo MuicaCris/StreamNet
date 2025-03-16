@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "nh8mmIHgoH8=",
+  "dgSpecHash": "Ijbsvo/3VBc=",
   "success": true,
-  "projectFilePath": "C:\\Users\\viper\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj",
+  "projectFilePath": "C:\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\viper\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\viper\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",

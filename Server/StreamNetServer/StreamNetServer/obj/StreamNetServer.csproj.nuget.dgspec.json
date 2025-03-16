@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\viper\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj": {}
+    "C:\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj": {}
   },
   "projects": {
-    "C:\\Users\\viper\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj": {
+    "C:\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\viper\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj",
+        "projectUniqueName": "C:\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj",
         "projectName": "StreamNetServer",
-        "projectPath": "C:\\Users\\viper\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj",
+        "projectPath": "C:\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\StreamNetServer.csproj",
         "packagesPath": "C:\\Users\\viper\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\viper\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\obj\\",
+        "outputPath": "C:\\StreamNet\\StreamNet\\Server\\StreamNetServer\\StreamNetServer\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
