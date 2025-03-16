@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.streamnetapp"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -53,6 +53,11 @@ dependencies {
     implementation ("androidx.camera:camera-camera2:1.3.0")
     implementation ("androidx.camera:camera-lifecycle:1.3.0")
     implementation ("androidx.camera:camera-view:1.3.0")
+    implementation("com.github.pedroSG94.rtmp-rtsp-stream-client-java:rtplibrary:2.2.4")
+    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("androidx.compose.foundation:foundation:1.4.0")
     implementation(libs.androidx.material3)
     implementation(libs.firebase.database.ktx)
     implementation(libs.androidx.navigation.compose)

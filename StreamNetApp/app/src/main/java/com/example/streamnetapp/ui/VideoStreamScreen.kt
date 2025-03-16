@@ -1,111 +1,152 @@
-package com.example.streamnetapp.ui
-
+import android.Manifest
+import android.content.pm.PackageManager
 import android.util.Log
-import androidx.camera.core.CameraSelector
-import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.*
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.viewinterop.AndroidView
+import com.pedro.rtplibrary.rtmp.RtmpCamera2
+import com.pedro.rtplibrary.view.OpenGlView
+import com.pedro.rtmp.utils.ConnectCheckerRtmp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun LiveStreamUI() {
+    val context = LocalContext.current
+    var rtmpCamera by remember { mutableStateOf<RtmpCamera2?>(null) }
+    var openGlView by remember { mutableStateOf<OpenGlView?>(null) }
     var isStreaming by remember { mutableStateOf(false) }
-    val chatMessages = remember { mutableStateListOf("Welcome to the stream!") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    val streamUrl = "rtmp://10.0.2.2:1935/live/streamkey"
+
+    val hasCamera = remember {
+        context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.all { it.value }
+        if (!allGranted) {
+            errorMessage = "Permisiuni necesare refuzate!"
+            Log.e("RTMP", "Permisiuni insuficiente")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO
+            )
+        )
+    }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(16.dp)
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp),
-            color = MaterialTheme.colorScheme.surface
-        ) {
-            AndroidView(
-                factory = { ctx ->
-                    PreviewView(ctx).apply {
-                        val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                        cameraProviderFuture.addListener({
-                            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-
-                            val preview = androidx.camera.core.Preview.Builder().build().also { preview ->
-                                preview.setSurfaceProvider(surfaceProvider)
-                            }
-
-                            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-                            try {
-                                cameraProvider.unbindAll()
-                                cameraProvider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    cameraSelector,
-                                    preview
-                                )
-                            } catch (e: Exception) {
-                                Log.e("CameraX", "Eroare la inițializarea camerei", e)
-                            }
-                        }, ContextCompat.getMainExecutor(ctx))
-                    }
-                }
+        errorMessage?.let {
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(16.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        if (hasCamera) {
+            AndroidView(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp),
+                factory = { ctx ->
+                    OpenGlView(ctx).apply {
+                        openGlView = this
+                        post {
+                            rtmpCamera = RtmpCamera2(
+                                this,
+                                object : ConnectCheckerRtmp {
+                                    override fun onConnectionStartedRtmp(rtmpUrl: String) {
+                                        Log.i("RTMP", "Conexiune începută: $rtmpUrl")
+                                    }
+                                    override fun onConnectionSuccessRtmp() {
+                                        Log.i("RTMP", "Conexiune reușită!")
+                                    }
+                                    override fun onConnectionFailedRtmp(reason: String) {
+                                        Log.e("RTMP", "Conexiune eșuată: $reason")
+                                    }
+                                    override fun onNewBitrateRtmp(bitrate: Long) {
+                                        Log.d("RTMP", "Bitrate nou: $bitrate")
+                                    }
+                                    override fun onDisconnectRtmp() {
+                                        Log.i("RTMP", "Deconectat")
+                                    }
+                                    override fun onAuthErrorRtmp() {
+                                        Log.e("RTMP", "Eroare de autentificare")
+                                    }
+                                    override fun onAuthSuccessRtmp() {
+                                        Log.i("RTMP", "Autentificare reușită")
+                                    }
+                                }
+                            )
+                            rtmpCamera?.startPreview()
+                        }
+                    }
+                },
+                update = { view -> openGlView = view }
+            )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
             Button(
-                onClick = { isStreaming = !isStreaming },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
+                onClick = {
+                    if (rtmpCamera == null) {
+                        Log.e("RTMP", "Camera nu este inițializată!")
+                        return@Button
+                    }
+
+                    if (!isStreaming) {
+                        try {
+                            Log.d("RTMP", "Pregătesc video și audio...")
+                            rtmpCamera?.prepareVideo(640, 480, 30, 1200 * 1024, 0)
+                            rtmpCamera?.prepareAudio(128 * 1024, 44100, true)
+
+                            Log.d("RTMP", "Încep stream-ul către: $streamUrl")
+                            rtmpCamera?.startStream(streamUrl)
+
+                            if (rtmpCamera?.isStreaming == true) {
+                                Log.i("RTMP", "Stream-ul a început cu succes!")
+                            } else {
+                                Log.e("RTMP", "Stream-ul nu a început!")
+                            }
+                        } catch (e: Exception) {
+                            Log.e("RTMP", "Eroare la pornirea stream-ului: ${e.message}")
+                        }
+                    } else {
+                        Log.d("RTMP", "Oprește stream-ul...")
+                        rtmpCamera?.stopStream()
+                        Log.i("RTMP", "Stream-ul a fost oprit.")
+                    }
+                    isStreaming = !isStreaming
+                }
             ) {
                 Text(if (isStreaming) "Stop Stream" else "Start Stream")
             }
-            Button(
-                onClick = { /* Schimbă camera */ },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            ) {
-                Text("Switch Camera")
-            }
         }
+    }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Chat live
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
-            items(chatMessages) { message ->
-                Text(
-                    text = message,
-                    modifier = Modifier.padding(8.dp),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+    DisposableEffect(Unit) {
+        onDispose {
+            rtmpCamera?.apply {
+                if (isStreaming) stopStream()
+                stopPreview()
             }
+            rtmpCamera = null
         }
     }
 }

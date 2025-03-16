@@ -1,5 +1,7 @@
 package com.example.streamnetapp
 
+import LiveStreamUI
+import MainMenu
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,9 +9,7 @@ import androidx.compose.runtime.*
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.streamnetapp.ui.LiveStreamUI
 import com.example.streamnetapp.ui.LoginScreen
-import com.example.streamnetapp.ui.MainMenu
 import com.example.streamnetapp.ui.SettingsMenu
 import com.example.streamnetapp.ui.SignupScreen
 import com.example.streamnetapp.ui.theme.StreamNetTheme
@@ -37,6 +37,7 @@ fun MainApp(isDarkMode: MutableState<Boolean>) {
         composable ("settingsMenu") { SettingsMenu(isDarkMode) }
         composable ("loginMenu") { LoginScreen(navController) }
         composable ("signupMenu") { SignupScreen(navController) }
+
     }
 }
 

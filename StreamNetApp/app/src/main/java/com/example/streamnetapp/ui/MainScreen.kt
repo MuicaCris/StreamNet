@@ -1,25 +1,35 @@
-package com.example.streamnetapp.ui
-
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.example.streamnetapp.api.fetchStreams
+import com.example.streamnetapp.model.LiveStream
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainMenu(navController: androidx.navigation.NavController) {
+fun MainMenu(navController: NavController) {
     var searchText by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
+    var streams by remember { mutableStateOf<List<LiveStream>>(emptyList()) }
+    var isStreaming by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        streams = withContext(Dispatchers.IO) {
+            fetchStreams()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -32,7 +42,7 @@ fun MainMenu(navController: androidx.navigation.NavController) {
                         active = isSearchActive,
                         onActiveChange = { isSearchActive = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Caută...", color = MaterialTheme.colorScheme.onBackground) },
+                        placeholder = { Text("Caută...") },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Search,
@@ -48,22 +58,10 @@ fun MainMenu(navController: androidx.navigation.NavController) {
                                     )
                                 }
                             }
-                        },
-                        content = {
-                            if (isSearchActive) {
-                                LazyColumn {
-                                    items(listOf("Rezultat 1", "Rezultat 2", "Rezultat 3")) { result ->
-                                        Text(
-                                            text = result,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp)
-                                        )
-                                    }
-                                }
-                            }
                         }
-                    )
+                    ) {
+                        Column { Text("Rezultate căutare:") }
+                    }
                 },
                 actions = {
                     IconButton(onClick = { navController.navigate("loginMenu") }) {
@@ -80,11 +78,7 @@ fun MainMenu(navController: androidx.navigation.NavController) {
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
         },
         content = { paddingValues ->
@@ -93,7 +87,7 @@ fun MainMenu(navController: androidx.navigation.NavController) {
                     .fillMaxSize()
                     .padding(paddingValues)
                     .padding(16.dp),
-                verticalArrangement = Arrangement.Center,
+                verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
@@ -103,21 +97,69 @@ fun MainMenu(navController: androidx.navigation.NavController) {
                     textAlign = TextAlign.Center
                 )
 
-                //if (user == streamer) {
+                Spacer(modifier = Modifier.height(16.dp))
 
-                    Spacer(modifier = Modifier.height(32.dp))
+                // Buton pentru Start/Stop Stream
+                Button(
+                    onClick = { isStreaming = !isStreaming },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (isStreaming) "Stop Stream" else "Start Stream")
+                }
 
-                    Button(
-                        onClick = { navController.navigate("liveStream") },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onTertiary
-                        )
-                    ) {
-                        Text("Start Streaming")
+                Spacer(modifier = Modifier.height(16.dp))
+
+                if (isStreaming) {
+                    LiveStreamUI()
+                }
+
+                // Lista de stream-uri
+                LazyColumn {
+                    if (streams.isEmpty()) {
+                        item {
+                            Text(
+                                text = "Nu există stream-uri disponibile",
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    } else {
+                        items(streams) { stream ->
+                            StreamItem(stream, navController)
+                        }
                     }
-                //}
+                }
             }
         }
     )
+}
+
+@Composable
+fun StreamItem(stream: LiveStream, navController: NavController) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+            .clickable { navController.navigate("watchStream/${stream.id}") }
+    ) {
+        AsyncImage(
+            model = stream.thumbnail,
+            contentDescription = "Thumbnail stream",
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+        )
+        Text(
+            text = stream.title,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        Text(
+            text = "Streamer: ${stream.streamerName}",
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
 }
