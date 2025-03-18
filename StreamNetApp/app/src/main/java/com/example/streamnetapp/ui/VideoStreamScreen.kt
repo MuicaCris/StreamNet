@@ -113,7 +113,7 @@ fun LiveStreamUI() {
                     if (!isStreaming) {
                         try {
                             Log.d("RTMP", "Pregătesc video și audio...")
-                            rtmpCamera?.prepareVideo(640, 480, 30, 1200 * 1024, 0)
+                            rtmpCamera?.prepareVideo(640, 480, 30, 1200 * 1024, 1)
                             rtmpCamera?.prepareAudio(128 * 1024, 44100, true)
 
                             Log.d("RTMP", "Încep stream-ul către: $streamUrl")
@@ -146,7 +146,7 @@ fun LiveStreamUI() {
                 if (isStreaming) stopStream()
                 stopPreview()
             }
-            rtmpCamera = null
+            rtmpCamera = null //39
         }
     }
 }

@@ -1,3 +1,5 @@
+using System;
+
 namespace StreamNetServer.Models;
 
 public class LiveStreamModel

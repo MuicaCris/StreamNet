@@ -1,64 +1,52 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using StreamNetServer.Models;
 
-namespace StreamNetServer.Controllers;
-
-[ApiController]
-[Route("api/stream")]
-public class StreamController : ControllerBase
+namespace StreamNetServer.Controllers
 {
-    [HttpGet("rtmpUrl/{streamId}")]
-    private ActionResult<string> GetRtmpUrl(int streamId)
+    [ApiController]
+    [Route("api/stream")]
+    public class StreamController : ControllerBase
     {
-        var streamUrl = $"rtmp://localhost:{streamId}";
-        return Ok(streamUrl);
-    }
-    
-    [HttpPost("createStream")]
-    public async Task<ActionResult<int>> CreateStream([FromBody] LiveStreamCreateRequest request)
-    {
-        if (string.IsNullOrEmpty(request.Title))
-        {
-            return BadRequest("Title is required.");
-        }
+        private readonly string _connectionString = "Server=localhost;Database=StreamNetServer;Trusted_Connection=True;TrustServerCertificate=True;";
 
-        using (SqlConnection conn = new SqlConnection("Server=localhost;Database=StreamNetServer;Trusted_Connection=True;TrustServerCertificate=True;"))
+        [HttpGet("activeStreams")]
+        public async Task<ActionResult<List<LiveStream>>> GetActiveStreams()
         {
-            await conn.OpenAsync();
-            var query = "INSERT INTO LiveStreams (Title, StreamerId, Thumbnail, Timestamp, IsActive) " +
-                        "OUTPUT INSERTED.Id " +
-                        "VALUES (@Title, @StreamerId, @Thumbnail, @Timestamp, 1)";
-    
-            using (SqlCommand cmd = new SqlCommand(query, conn))
+            try
             {
-                cmd.Parameters.AddWithValue("@Title", request.Title);
-                cmd.Parameters.AddWithValue("@StreamerId", request.StreamerId);
-                cmd.Parameters.AddWithValue("@Thumbnail", (object)request.Thumbnail ?? DBNull.Value);
-                cmd.Parameters.AddWithValue("@Timestamp", request.Timestamp);
+                var streams = new List<LiveStream>();
 
-                int streamId = (int)await cmd.ExecuteScalarAsync();
+                await using var conn = new SqlConnection(_connectionString);
+                await conn.OpenAsync();
 
-                var rtmpUrl = $"rtmp://localhost:{streamId}";
-                return Ok(new { StreamId = streamId, RtmpUrl = rtmpUrl });
+                var query = "SELECT Id, Title, StreamerId, Thumbnail, Timestamp, IsActive FROM LiveStreams WHERE IsActive = 1";
+                
+                await using var cmd = new SqlCommand(query, conn);
+                await using var reader = await cmd.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    streams.Add(new LiveStream
+                    {
+                        Id = reader.GetInt32(0),
+                        Title = reader.GetString(1),
+                        StreamerId = reader.GetInt32(2),
+                        Thumbnail = reader.IsDBNull(3) ? null : reader.GetString(3),
+                        Timestamp = reader.GetDateTime(4),
+                        IsActive = reader.GetBoolean(5)
+                    });
+                }
+
+                return Ok(streams);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Eroare server: {ex.Message}");
             }
         }
     }
-    
-    [HttpPost("stopStream/{streamId}")]
-    public async Task<ActionResult> StopStream(int streamId)
-    {
-        using (SqlConnection conn = new SqlConnection("Server=localhost;Database=StreamNetServer;Trusted_Connection=True;TrustServerCertificate=True;"))
-        {
-            await conn.OpenAsync();
-            var query = "UPDATE LiveStreams SET IsActive = 0 WHERE Id = @StreamId";
-    
-            using (SqlCommand cmd = new SqlCommand(query, conn))
-            {
-                cmd.Parameters.AddWithValue("@StreamId", streamId);
-                await cmd.ExecuteNonQueryAsync();
-            }
-        }
-        return Ok();
-    }    
 }

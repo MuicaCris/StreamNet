@@ -99,7 +99,6 @@ fun MainMenu(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Buton pentru Start/Stop Stream
                 Button(
                     onClick = { isStreaming = !isStreaming },
                     colors = ButtonDefaults.buttonColors(
@@ -117,7 +116,6 @@ fun MainMenu(navController: NavController) {
                     LiveStreamUI()
                 }
 
-                // Lista de stream-uri
                 LazyColumn {
                     if (streams.isEmpty()) {
                         item {

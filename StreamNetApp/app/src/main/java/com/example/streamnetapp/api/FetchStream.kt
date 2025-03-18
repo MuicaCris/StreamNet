@@ -8,7 +8,7 @@ import okhttp3.Request
 import org.json.JSONArray
 
 suspend fun fetchStreams(): List<LiveStream> {
-    return withContext(Dispatchers.IO) { // Mută operațiunea pe un thread de background
+    return withContext(Dispatchers.IO) {
         val client = OkHttpClient()
         val request = Request.Builder()
             .url("http://10.0.2.2/api/liveStreams")
@@ -32,7 +32,7 @@ suspend fun fetchStreams(): List<LiveStream> {
                 )
             }
         } catch (e: Exception) {
-            emptyList() // Returnează o listă goală în caz de eroare
+            emptyList()
         }
     }
 }
