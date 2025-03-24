@@ -85,7 +85,7 @@ fun SettingsMenu(isDarkMode: MutableState<Boolean>) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Button(
-                onClick = { isQualityDropdownExpanded = true }, //ktor websocket coonectare server
+                onClick = { isQualityDropdownExpanded = true },
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.onSurface,
                     contentColor = MaterialTheme.colorScheme.onSurface

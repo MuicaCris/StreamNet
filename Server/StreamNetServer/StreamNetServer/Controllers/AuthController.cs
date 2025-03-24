@@ -20,7 +20,7 @@ namespace StreamNetServer.Controllers
 
             try
             {
-                using (SqlConnection conn = new SqlConnection("Server=localhost;Database=StreamNetServer;Trusted_Connection=True;TrustServerCertificate=True;"))
+                using (SqlConnection conn = new SqlConnection("Server=localhost;Database=StreamNetDB;Trusted_Connection=True;TrustServerCertificate=True;"))
                 {
                     await conn.OpenAsync();
                     Console.WriteLine("Database connection opened successfully.");
