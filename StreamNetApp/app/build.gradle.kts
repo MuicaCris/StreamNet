@@ -60,6 +60,8 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("androidx.compose.foundation:foundation:1.4.0")
+    implementation ("com.google.android.exoplayer:exoplayer:2.18.7")
+    implementation ("com.google.android.exoplayer:exoplayer-hls:2.18.7")
     implementation(libs.androidx.material3)
     implementation(libs.firebase.database.ktx)
     implementation(libs.androidx.navigation.compose)

@@ -39,41 +39,41 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var usePublicServer by remember { mutableStateOf(Settings.usePublicServer(context)) }
+    var streamType by remember { mutableStateOf(Settings.getStreamType(context)) }
     val coroutineScope = rememberCoroutineScope()
     var playbackStarted by remember { mutableStateOf(false) }
     var serverStatus by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
     var testingNetwork by remember { mutableStateOf(false) }
 
-    // Improved logging for the stream ID
     LaunchedEffect(streamId) {
-        Log.d(TAG, "Received stream ID: $streamId (${streamId::class.java.simpleName})")
+        Log.d(TAG, "Received stream ID: $streamId")
     }
 
-    // Testăm conectivitatea la serverele RTMP
     LaunchedEffect(usePublicServer) {
         testingNetwork = true
         try {
-            // Assuming RTMP_SERVER and RTMP_PORT are accessible as public constants
-            // If not, use hardcoded values matching your setup
             val publicHost = ApiClient.RTMP_SERVER
-            val port = ApiClient.RTMP_PORT.toIntOrNull() ?: 1935
+            val port = if (streamType == ApiClient.STREAM_TYPE_RTMP) {
+                ApiClient.RTMP_PORT.toIntOrNull() ?: 1935
+            } else {
+                8080
+            }
 
-            Log.d(TAG, "Testing RTMP servers - public: $publicHost, port: $port")
+            Log.d(TAG, "Testing servers - public: $publicHost, port: $port, type: $streamType")
 
             val results = NetworkUtils.testRtmpServers(
                 publicHost = publicHost,
-                localHost = "10.0.2.2", // For emulator
+                localHost = "10.0.2.2",
                 port = port
             )
             serverStatus = results
             Log.d(TAG, "Server status: $results")
 
-            // If the selected server is not reachable, show a warning
             if ((usePublicServer && serverStatus["public"] == false) ||
                 (!usePublicServer && serverStatus["local"] == false)) {
 
                 val serverType = if (usePublicServer) "public" else "local"
-                errorMessage = "Serverul $serverType RTMP nu este accesibil. Verificați conexiunea sau încercați alt server."
+                errorMessage = "$serverType server not accessible. Check connection or try another server."
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error testing server connectivity", e)
@@ -82,60 +82,68 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
         }
     }
 
-    // Încărcăm informațiile despre stream
     LaunchedEffect(streamId) {
-        Log.d(TAG, "Încărcăm stream cu ID: $streamId")
+        Log.d(TAG, "Loading stream with ID: $streamId")
         coroutineScope.launch {
             try {
                 val streams = ApiClient.fetchStreams()
-                Log.d(TAG, "Streams încărcate: ${streams.size}")
-                Log.d(TAG, "ID-uri disponibile: ${streams.map { it.id }}")
+                Log.d(TAG, "Loaded streams: ${streams.size}")
+                Log.d(TAG, "Available IDs: ${streams.map { it.id }}")
 
                 stream = streams.find { it.id == streamId }
-                Log.d(TAG, "Stream găsit: ${stream?.title}, key: ${stream?.streamKey}")
+                Log.d(TAG, "Found stream: ${stream?.title}, key: ${stream?.streamKey}")
                 isLoading = false
             } catch (e: Exception) {
-                Log.e(TAG, "Eroare la obținerea stream-ului", e)
-                errorMessage = "Eroare la încărcarea stream-ului: ${e.message}"
+                Log.e(TAG, "Error getting stream", e)
+                errorMessage = "Error loading stream: ${e.message}"
                 isLoading = false
             }
         }
     }
 
-    // URL-ul RTMP pentru stream
-    val streamUrl = remember(stream, usePublicServer) {
+    val streamUrl = remember(stream, usePublicServer, streamType) {
         if (stream != null) {
-            // Pass the usePublicServer parameter
-            val url = ApiClient.getRtmpUrl(stream!!.streamKey, usePublicServer)
-            Log.d(TAG, "Built RTMP URL: $url (usePublicServer: $usePublicServer)")
-            url
-        } else {
-            // Dacă am primit id-ul stream-ului local, dar acesta nu e încă în listă
-            if (streamId == ApiClient.LOCAL_STREAM_ID && ApiClient.hasLocalStream()) {
-                val localKey = ApiClient.getLocalStreamKey() ?: "streamkey"
-                // Pass the usePublicServer parameter
-                val url = ApiClient.getRtmpUrl(localKey, usePublicServer)
-                Log.d(TAG, "Built local RTMP URL: $url (usePublicServer: $usePublicServer)")
+            if (streamType == ApiClient.STREAM_TYPE_HLS) {
+                val url = ApiClient.getHlsUrl(stream!!.streamKey)
+                Log.d(TAG, "Built HLS URL: $url")
                 url
             } else {
-                // URL implicit
-                // Pass the usePublicServer parameter
-                val url = ApiClient.getRtmpUrl("fallback", usePublicServer)
-                Log.d(TAG, "Using fallback RTMP URL: $url (usePublicServer: $usePublicServer)")
+                val url = ApiClient.getRtmpUrl(stream!!.streamKey, usePublicServer)
+                Log.d(TAG, "Built RTMP URL: $url (usePublicServer: $usePublicServer)")
                 url
+            }
+        } else {
+            if (streamId == ApiClient.LOCAL_STREAM_ID && ApiClient.hasLocalStream()) {
+                val localKey = ApiClient.getLocalStreamKey() ?: "streamkey"
+                if (streamType == ApiClient.STREAM_TYPE_HLS) {
+                    val url = ApiClient.getHlsUrl(localKey)
+                    Log.d(TAG, "Built local HLS URL: $url")
+                    url
+                } else {
+                    val url = ApiClient.getRtmpUrl(localKey, usePublicServer)
+                    Log.d(TAG, "Built local RTMP URL: $url (usePublicServer: $usePublicServer)")
+                    url
+                }
+            } else {
+                if (streamType == ApiClient.STREAM_TYPE_HLS) {
+                    val url = ApiClient.getHlsUrl("fallback")
+                    Log.d(TAG, "Using fallback HLS URL: $url")
+                    url
+                } else {
+                    val url = ApiClient.getRtmpUrl("fallback", usePublicServer)
+                    Log.d(TAG, "Using fallback RTMP URL: $url (usePublicServer: $usePublicServer)")
+                    url
+                }
             }
         }
     }
 
-    // Create ExoPlayer - simplified to use only stable APIs
     val exoPlayer = remember {
-        // Basic ExoPlayer setup without unstable APIs
         ExoPlayer.Builder(context)
             .build()
             .apply {
                 playWhenReady = true
 
-                // Basic player listener
                 addListener(object : Player.Listener {
                     override fun onPlaybackStateChanged(state: Int) {
                         when (state) {
@@ -151,29 +159,26 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                             }
                             Player.STATE_ENDED -> {
                                 Log.d(TAG, "Player: ENDED")
-                                errorMessage = "Stream-ul s-a încheiat"
+                                errorMessage = "Stream ended"
                             }
                             Player.STATE_IDLE -> {
                                 Log.d(TAG, "Player: IDLE")
                                 if (playbackStarted) {
-                                    // Only show error if we were previously playing
-                                    errorMessage = "Stream-ul nu poate fi redat"
+                                    errorMessage = "Cannot play stream"
                                 }
                             }
                         }
                     }
 
                     override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-                        // Basic error logging
                         Log.e(TAG, "Player error: ${error.message}")
 
-                        // User-friendly error messages
                         val errorMsg = when (error.errorCode) {
                             androidx.media3.common.PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ->
-                                "Nu s-a putut conecta la server. Verificați conexiunea la internet."
+                                "Could not connect to server. Check internet connection."
                             androidx.media3.common.PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ->
-                                "Conexiunea la server a expirat. Încercați din nou."
-                            else -> "Eroare la redarea stream-ului: ${error.message}"
+                                "Connection to server timed out. Try again."
+                            else -> "Stream playback error: ${error.message}"
                         }
 
                         errorMessage = errorMsg
@@ -183,7 +188,6 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
             }
     }
 
-    // Actualizăm URL-ul când se schimbă stream-ul
     LaunchedEffect(streamUrl) {
         playbackStarted = false
         Log.d(TAG, "Setting media URL: $streamUrl")
@@ -193,24 +197,22 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                 stop()
                 clearMediaItems()
 
-                // Simple MediaItem construction
                 val mediaItem = MediaItem.fromUri(Uri.parse(streamUrl))
                 setMediaItem(mediaItem)
                 prepare()
                 play()
             }
 
-            // Add a timeout to detect if the stream fails to start
-            delay(8000) // Wait 8 seconds
+            delay(8000)
             if (!playbackStarted && exoPlayer.playbackState != Player.STATE_BUFFERING) {
                 Log.d(TAG, "Stream failed to start after timeout")
                 if (errorMessage == null) {
-                    errorMessage = "Nu s-a putut conecta la stream. Serverul este disponibil?"
+                    errorMessage = "Could not connect to stream. Is server available?"
                 }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error setting media item", e)
-            errorMessage = "Eroare la configurarea player-ului: ${e.message}"
+            errorMessage = "Player setup error: ${e.message}"
             isLoading = false
         }
     }
@@ -219,53 +221,73 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
         topBar = {
             TopAppBar(
                 title = {
-                    Text(stream?.title ?: "Stream Live")
+                    Text(stream?.title ?: "Live Stream")
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        Log.d(TAG, "Navigare înapoi")
+                        Log.d(TAG, "Navigating back")
                         navController.popBackStack()
                     }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Înapoi")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
-                    // Indicator server public/local
                     Text(
-                        text = if (usePublicServer) "Public" else "Local",
+                        text = if (streamType == ApiClient.STREAM_TYPE_HLS) "HLS" else "RTMP",
                         style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(end = 8.dp)
+                        modifier = Modifier.padding(end = 4.dp)
                     )
 
-                    // Buton pentru a schimba între server local și public
                     IconButton(onClick = {
-                        usePublicServer = !usePublicServer
-                        Settings.setUsePublicServer(context, usePublicServer)
-                        Log.d(TAG, "Schimbat la server ${if (usePublicServer) "public" else "local"}")
+                        streamType = if (streamType == ApiClient.STREAM_TYPE_RTMP) {
+                            ApiClient.STREAM_TYPE_HLS
+                        } else {
+                            ApiClient.STREAM_TYPE_RTMP
+                        }
+                        Settings.setStreamType(context, streamType)
+                        Log.d(TAG, "Switched to $streamType")
                     }) {
                         Icon(
                             Icons.Default.Place,
-                            contentDescription = if (usePublicServer) "Server public" else "Server local"
+                            contentDescription = if (streamType == ApiClient.STREAM_TYPE_HLS)
+                                "HLS Stream" else "RTMP Stream"
                         )
                     }
 
-                    // Buton pentru refresh
+                    if (streamType == ApiClient.STREAM_TYPE_RTMP) {
+                        Text(
+                            text = if (usePublicServer) "Public" else "Local",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+
+                        IconButton(onClick = {
+                            usePublicServer = !usePublicServer
+                            Settings.setUsePublicServer(context, usePublicServer)
+                            Log.d(TAG, "Switched to ${if (usePublicServer) "public" else "local"} server")
+                        }) {
+                            Icon(
+                                Icons.Default.Place,
+                                contentDescription = if (usePublicServer) "Public server" else "Local server"
+                            )
+                        }
+                    }
+
                     IconButton(onClick = {
-                        Log.d(TAG, "Refresh player")
+                        Log.d(TAG, "Refreshing player")
                         playbackStarted = false
                         errorMessage = null
                         isLoading = true
                         exoPlayer.apply {
                             stop()
                             clearMediaItems()
-                            // Simple MediaItem construction
                             val mediaItem = MediaItem.fromUri(Uri.parse(streamUrl))
                             setMediaItem(mediaItem)
                             prepare()
                             play()
                         }
                     }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Reîncarcă")
+                        Icon(Icons.Default.Refresh, contentDescription = "Reload")
                     }
                 }
             )
@@ -276,7 +298,6 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Display server testing status
             if (testingNetwork) {
                 Card(
                     modifier = Modifier
@@ -287,94 +308,13 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                         modifier = Modifier.padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Se testează conectivitatea la servere RTMP...")
+                        Text("Testing server connectivity...")
                         Spacer(modifier = Modifier.height(8.dp))
                         CircularProgressIndicator(modifier = Modifier.size(24.dp))
                     }
                 }
-            } else if (serverStatus.isNotEmpty()) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Status Servere RTMP",
-                            style = MaterialTheme.typography.titleMedium
-                        )
-
-                        Divider(modifier = Modifier.padding(vertical = 8.dp))
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Server Public:")
-                            Text(
-                                text = if (serverStatus["public"] == true) "Accesibil" else "Inaccesibil",
-                                color = if (serverStatus["public"] == true)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.error
-                            )
-                        }
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("Server Local:")
-                            Text(
-                                text = if (serverStatus["local"] == true) "Accesibil" else "Inaccesibil",
-                                color = if (serverStatus["local"] == true)
-                                    MaterialTheme.colorScheme.primary
-                                else
-                                    MaterialTheme.colorScheme.error
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = "Server activ: ${if (usePublicServer) "Public" else "Local"}",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-
-                        if ((usePublicServer && serverStatus["public"] == false) ||
-                            (!usePublicServer && serverStatus["local"] == false)) {
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Text(
-                                text = "Serverul selectat nu este accesibil. Încercați alt server.",
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Button(
-                                onClick = {
-                                    usePublicServer = !usePublicServer
-                                    Settings.setUsePublicServer(context, usePublicServer)
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text("Comută la server ${if (usePublicServer) "Local" else "Public"}")
-                            }
-                        }
-                    }
-                }
             }
 
-            // Player pentru stream
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -385,14 +325,12 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                         PlayerView(ctx).apply {
                             player = exoPlayer
                             useController = true
-                            // Use simpler API for PlayerView
                             keepScreenOn = true
                         }
                     },
                     modifier = Modifier.fillMaxSize()
                 )
 
-                // Indicator de încărcare
                 if (isLoading) {
                     Box(
                         modifier = Modifier
@@ -404,7 +342,6 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                     }
                 }
 
-                // Mesaj de eroare
                 errorMessage?.let { error ->
                     Surface(
                         modifier = Modifier
@@ -424,20 +361,21 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
 
                             Spacer(modifier = Modifier.height(8.dp))
 
-                            // Buton pentru a încerca să schimbe serverul
                             Button(
                                 onClick = {
-                                    usePublicServer = !usePublicServer
-                                    Settings.setUsePublicServer(context, usePublicServer)
-                                    Log.d(TAG, "Încercare comutare la server ${if (usePublicServer) "public" else "local"}")
+                                    streamType = if (streamType == ApiClient.STREAM_TYPE_RTMP) {
+                                        ApiClient.STREAM_TYPE_HLS
+                                    } else {
+                                        ApiClient.STREAM_TYPE_RTMP
+                                    }
+                                    Settings.setStreamType(context, streamType)
 
-                                    // Reset error state
                                     errorMessage = null
                                     isLoading = true
                                     playbackStarted = false
                                 }
                             ) {
-                                Text("Încearcă server ${if (usePublicServer) "Local" else "Public"}")
+                                Text("Try with ${if (streamType == ApiClient.STREAM_TYPE_RTMP) "HLS" else "RTMP"}")
                             }
 
                             Button(
@@ -446,7 +384,6 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                                     isLoading = true
                                     playbackStarted = false
 
-                                    // Reload the player
                                     exoPlayer.apply {
                                         stop()
                                         clearMediaItems()
@@ -458,14 +395,13 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                                 },
                                 modifier = Modifier.padding(top = 8.dp)
                             ) {
-                                Text("Reîncearcă")
+                                Text("Retry")
                             }
                         }
                     }
                 }
             }
 
-            // RTMP URL Debugging Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -475,13 +411,26 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "Informații de Depanare",
+                        text = "Stream Info",
                         style = MaterialTheme.typography.titleMedium
                     )
 
                     Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-                    Text("RTMP URL:", style = MaterialTheme.typography.bodyMedium)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Stream type:")
+                        Text(
+                            text = streamType.uppercase(),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+
+                    Text("URL:", style = MaterialTheme.typography.bodyMedium)
                     Text(
                         text = streamUrl,
                         style = MaterialTheme.typography.bodySmall
@@ -489,19 +438,40 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Text("Sfaturi de depanare:", style = MaterialTheme.typography.bodyMedium)
+                    Button(
+                        onClick = {
+                            streamType = if (streamType == ApiClient.STREAM_TYPE_RTMP) {
+                                ApiClient.STREAM_TYPE_HLS
+                            } else {
+                                ApiClient.STREAM_TYPE_RTMP
+                            }
+                            Settings.setStreamType(context, streamType)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Switch to ${if (streamType == ApiClient.STREAM_TYPE_RTMP) "HLS" else "RTMP"}")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text("Troubleshooting tips:", style = MaterialTheme.typography.bodyMedium)
                     Text(
-                        text = "1. Asigurați-vă că serverul RTMP rulează\n" +
-                                "2. Verificați firewall-ul și portul 1935\n" +
-                                "3. Dacă folosiți emulator, folosiți 10.0.2.2 pentru localhost\n" +
-                                "4. Pe dispozitiv real, folosiți IP-ul real al computerului",
+                        text = if (streamType == ApiClient.STREAM_TYPE_HLS) {
+                            "1. HLS recommended for viewing on other devices\n" +
+                                    "2. HLS has higher latency than RTMP\n" +
+                                    "3. Make sure server has HLS configured\n" +
+                                    "4. HLS URL can be accessed in browser: $streamUrl"
+                        } else {
+                            "1. RTMP has lower latency\n" +
+                                    "2. For emulator, use 10.0.2.2 for localhost\n" +
+                                    "3. On real device, use computer's real IP\n" +
+                                    "4. HLS recommended for cross-device compatibility"
+                        },
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
 
-            // Rest of the component remains the same
-            // Informații despre stream
             stream?.let { currentStream ->
                 Card(
                     modifier = Modifier
@@ -511,7 +481,6 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                     Column(
                         modifier = Modifier.padding(16.dp)
                     ) {
-                        // Titlu stream
                         Text(
                             text = currentStream.title,
                             style = MaterialTheme.typography.headlineSmall
@@ -519,14 +488,13 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
 
                         Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-                        // Detalii stream
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("ID Stream:")
+                            Text("Stream ID:")
                             Text("${currentStream.id}")
                         }
 
@@ -540,7 +508,6 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                             Text("${currentStream.streamerId}")
                         }
 
-                        // Display stream key for debugging purposes
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -558,38 +525,36 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                                     .padding(vertical = 4.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text("Data:")
+                                Text("Date:")
                                 Text(currentStream.timestamp)
                             }
                         }
 
-                        // Informații suplimentare dacă e stream-ul local
                         if (currentStream.id == ApiClient.LOCAL_STREAM_ID ||
                             currentStream.streamKey == ApiClient.getLocalStreamKey()) {
                             Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                             Text(
-                                text = "Acesta este stream-ul tău!",
+                                text = "This is your stream!",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
 
                             Button(
                                 onClick = {
-                                    Log.d(TAG, "Navigare la ecranul de stream")
+                                    Log.d(TAG, "Navigating to stream screen")
                                     navController.navigate("liveStream")
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(top = 8.dp)
                             ) {
-                                Text("Configurează Stream")
+                                Text("Configure Stream")
                             }
                         }
                     }
                 }
             } ?: run {
-                // Afișăm un indicator de încărcare dacă stream-ul nu a fost găsit încă
                 if (isLoading) {
                     Box(
                         modifier = Modifier
@@ -604,11 +569,10 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
 
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            Text("Se încarcă informațiile despre stream...")
+                            Text("Loading stream info...")
                         }
                     }
                 } else {
-                    // Afișăm un mesaj de eroare dacă stream-ul nu a fost găsit
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -622,7 +586,7 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Stream-ul nu a fost găsit",
+                                text = "Stream not found",
                                 color = MaterialTheme.colorScheme.onErrorContainer
                             )
 
@@ -631,7 +595,7 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
                             Button(
                                 onClick = { navController.popBackStack() }
                             ) {
-                                Text("Înapoi")
+                                Text("Back")
                             }
                         }
                     }
@@ -640,10 +604,9 @@ fun WatchStreamScreen(streamId: Int, navController: NavController) {
         }
     }
 
-    // Eliberăm resursele când ecranul este părăsit
     DisposableEffect(Unit) {
         onDispose {
-            Log.d(TAG, "Eliberăm resursele player-ului")
+            Log.d(TAG, "Releasing player resources")
             exoPlayer.release()
         }
     }

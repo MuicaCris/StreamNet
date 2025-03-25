@@ -13,13 +13,13 @@ namespace StreamNetServer.Services
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Serviciu RTMP începe...");
+            _logger.LogInformation("Serviciu RTMP incepe...");
             await _rtmpService.StartRtmpServerAsync();
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Serviciu RTMP se oprește...");
+            _logger.LogInformation("Serviciu RTMP se opreste...");
             await _rtmpService.StopRtmpServerAsync();
         }
     }

@@ -25,11 +25,16 @@ object ApiClient {
 
     const val LOCAL_STREAM_ID = 9999
 
-    private const val API_URL = "http://192.168.1.5:5080/api/Streams"
+    private const val API_URL = "http://192.168.1.5:5202/api/Streams"
 
     const val RTMP_SERVER = "192.168.1.5"
     const val RTMP_PORT = "1935"
     private const val RTMP_APP = "live"
+
+    const val STREAM_TYPE_RTMP = "rtmp"
+    const val STREAM_TYPE_HLS = "hls"
+
+    private const val RTMP_HTTP_PORT = "8080"
 
     suspend fun fetchStreams(): List<LiveStream> {
         return withContext(Dispatchers.IO) {
@@ -40,7 +45,7 @@ object ApiClient {
 
                 val response = client.newCall(request).execute()
                 if (!response.isSuccessful) {
-                    Log.e(TAG, "Eroare API: ${response.code}")
+                    Log.e(TAG, "API Error: ${response.code}")
                     return@withContext emptyList()
                 }
 
@@ -56,7 +61,7 @@ object ApiClient {
                     streamWithLocal.add(
                         LiveStream(
                             id = LOCAL_STREAM_ID,
-                            title = "Stream-ul meu",
+                            title = "My stream",
                             streamerId = 1,
                             thumbnail = null,
                             timestamp = java.util.Date().toString(),
@@ -64,20 +69,20 @@ object ApiClient {
                         )
                     )
 
-                    Log.d(TAG, "Stream local adăugat în listă: $localStreamKey")
+                    Log.d(TAG, "Local stream added to list: $localStreamKey")
                     return@withContext streamWithLocal
                 }
 
                 streamList
             } catch (e: Exception) {
-                Log.e(TAG, "Excepție la obținerea stream-urilor", e)
+                Log.e(TAG, "Exception while fetching streams", e)
 
                 if (isStreaming && localStreamKey != null) {
-                    Log.d(TAG, "Returnăm doar stream-ul local în caz de eroare API")
+                    Log.d(TAG, "Returning only local stream on API error")
                     return@withContext listOf(
                         LiveStream(
                             id = LOCAL_STREAM_ID,
-                            title = "Stream-ul meu",
+                            title = "My stream",
                             streamerId = 1,
                             thumbnail = null,
                             timestamp = java.util.Date().toString(),
@@ -87,40 +92,6 @@ object ApiClient {
                 }
 
                 emptyList()
-            }
-        }
-    }
-
-    suspend fun registerStream(streamKey: String, title: String, streamerId: Int): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val json = JSONObject().apply {
-                    put("streamKey", streamKey)
-                    put("title", title)
-                    put("streamerId", streamerId)
-                }
-
-                val mediaType = "application/json; charset=utf-8".toMediaType()
-                val requestBody = json.toString().toRequestBody(mediaType)
-
-                val request = Request.Builder()
-                    .url("$API_URL/start")
-                    .post(requestBody)
-                    .build()
-
-                val response = client.newCall(request).execute()
-                val success = response.isSuccessful
-
-                if (success) {
-                    Log.d(TAG, "Stream inregistrat cu succes: $streamKey")
-                } else {
-                    Log.e(TAG, "Eroare la inregistrarea stream-ului: ${response.code}")
-                }
-
-                success
-            } catch (e: Exception) {
-                Log.e(TAG, "Exceptie la inregistrarea stream-ului", e)
-                false
             }
         }
     }
@@ -145,14 +116,14 @@ object ApiClient {
                 val success = response.isSuccessful
 
                 if (success) {
-                    Log.d(TAG, "Stream dezactivat cu succes: $streamKey")
+                    Log.d(TAG, "Stream deactivated successfully: $streamKey")
                 } else {
-                    Log.e(TAG, "Eroare la dezactivarea stream-ului: ${response.code}")
+                    Log.e(TAG, "Error deactivating stream: ${response.code}")
                 }
 
                 success
             } catch (e: Exception) {
-                Log.e(TAG, "Exceptie la dezactivarea stream-ului", e)
+                Log.e(TAG, "Exception while deactivating stream", e)
                 false
             }
         }
@@ -162,7 +133,7 @@ object ApiClient {
         localStreamKey = streamKey
         isStreaming = !streamKey.isNullOrEmpty()
 
-        Log.d(TAG, "Stream local: cheie=$streamKey, activ=$isStreaming")
+        Log.d(TAG, "Local stream: key=$streamKey, active=$isStreaming")
     }
 
     fun hasLocalStream(): Boolean {
@@ -173,43 +144,116 @@ object ApiClient {
         return localStreamKey
     }
 
-    // This should be in your ApiClient.kt file
-// Add or update the getRtmpUrl function
-
-    // Update your getRtmpUrl function in ApiClient.kt
-
-    // Update your getRtmpUrl function in ApiClient.kt to handle local connections better
-
-    fun getRtmpUrl(streamKey: String, usePublicServer: Boolean = true): String {
-        // Ensure streamKey is not null or empty
+    fun getHlsUrl(streamKey: String): String {
         val safeStreamKey = streamKey.takeIf { it.isNotEmpty() } ?: "default"
-
-        // Determine the base URL based on server mode
-        val baseRtmpUrl = if (usePublicServer) {
-            // For public server
-            "rtmp://$RTMP_SERVER:$RTMP_PORT/$RTMP_APP/"
-        } else {
-            // For local connection:
-            // On an emulator, use 10.0.2.2 which points to the host's localhost
-            // On a real device, use your computer's IP address on the local network
-
-            // This format works for emulators
-            "rtmp://10.0.2.2:$RTMP_PORT/$RTMP_APP/"
-
-            // If you're using a physical device, uncomment and use your computer's actual IP:
-            // "rtmp://192.168.X.X:$RTMP_PORT/$RTMP_APP/"
-        }
-
-        // Build the full URL
-        val fullUrl = "$baseRtmpUrl$safeStreamKey"
-
-        // Log for debugging
-        Log.d(TAG, "RTMP URL: $fullUrl (usePublicServer: $usePublicServer, key: $safeStreamKey)")
-
-        return fullUrl
+        val hlsUrl = "http://$RTMP_SERVER:8080/hls/$safeStreamKey.m3u8"
+        Log.d(TAG, "HLS URL: $hlsUrl")
+        return hlsUrl
     }
 
+    fun getRtmpUrl(streamKey: String, usePublicServer: Boolean = true): String {
+        val safeStreamKey = streamKey.takeIf { it.isNotEmpty() } ?: "default"
+        val rtmpUrl = "rtmp://$RTMP_SERVER:$RTMP_PORT/$RTMP_APP/$safeStreamKey"
+        Log.d(TAG, "RTMP URL: $rtmpUrl")
+        return rtmpUrl
+    }
 
+    suspend fun registerStream(streamKey: String, title: String, streamerId: Int): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val jsonBody = """
+                {
+                    "streamKey": "$streamKey",
+                    "title": "$title",
+                    "streamerId": $streamerId
+                }
+            """.trimIndent()
+
+                Log.d(TAG, "JSON payload: $jsonBody")
+
+                val mediaType = "application/json".toMediaType()
+                val requestBody = jsonBody.toRequestBody(mediaType)
+
+                val url = "http://192.168.1.5:5202/api/Streams/start"
+
+                val request = Request.Builder()
+                    .url(url)
+                    .header("Content-Type", "application/json")
+                    .post(requestBody)
+                    .build()
+
+                val response = client.newCall(request).execute()
+                val responseBody = response.body?.string()
+
+                Log.d(TAG, "Server response: ${response.code} - $responseBody")
+
+                val success = response.isSuccessful
+
+                if (success) {
+                    Log.d(TAG, "Stream registered successfully: $streamKey")
+                } else {
+                    Log.e(TAG, "Error registering stream: ${response.code} - $responseBody")
+                }
+
+                success
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception while registering stream", e)
+                false
+            }
+        }
+    }
+
+    suspend fun stopStream(streamKey: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val json = JSONObject().apply {
+                    put("streamKey", streamKey)
+                    put("active", false)
+                }
+
+                val mediaType = "application/json; charset=utf-8".toMediaType()
+                val requestBody = json.toString().toRequestBody(mediaType)
+
+                val request = Request.Builder()
+                    .url("$API_URL/stop")
+                    .post(requestBody)
+                    .build()
+
+                val response = client.newCall(request).execute()
+                val apiSuccess = response.isSuccessful
+
+                if (apiSuccess) {
+                    Log.d(TAG, "Server notified about stopped stream: $streamKey")
+                } else {
+                    Log.e(TAG, "Error notifying server: ${response.code}")
+                }
+
+                try {
+                    val disconnectRequest = Request.Builder()
+                        .url("http://$RTMP_SERVER:$RTMP_HTTP_PORT/control/drop/publisher?app=$RTMP_APP&name=$streamKey")
+                        .get()
+                        .build()
+
+                    val rtmpResponse = client.newCall(disconnectRequest).execute()
+                    if (rtmpResponse.isSuccessful) {
+                        Log.d(TAG, "Drop command sent to RTMP server: $streamKey")
+                    } else {
+                        Log.e(TAG, "Error sending drop command to RTMP: ${rtmpResponse.code}")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error sending drop command to RTMP", e)
+                }
+
+                isStreaming = false
+                localStreamKey = null
+
+                apiSuccess
+            } catch (e: Exception) {
+                Log.e(TAG, "Exception while stopping stream", e)
+                false
+            }
+        }
+    }
 
     private fun parseStreams(jsonString: String): List<LiveStream> {
         return try {
@@ -226,7 +270,7 @@ object ApiClient {
                 )
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Eroare la parsarea JSON", e)
+            Log.e(TAG, "JSON parsing error", e)
             emptyList()
         }
     }

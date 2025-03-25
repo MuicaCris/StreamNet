@@ -1,6 +1,8 @@
 package com.example.streamnetapp.utils
 
 import android.content.Context
+import android.preference.PreferenceManager
+import com.example.streamnetapp.api.ApiClient
 import java.util.*
 
 /**
@@ -46,16 +48,16 @@ object Settings {
     /**
      * Obține numele de utilizator
      */
-    fun getUsername(context: Context): String {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_USERNAME, "User_${getDeviceId(context)}") ?: "User_${getDeviceId(context)}"
+    fun getStreamType(context: Context): String {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        return prefs.getString("stream_type", ApiClient.STREAM_TYPE_HLS) ?: ApiClient.STREAM_TYPE_HLS
     }
 
     /**
-     * Setează numele de utilizator
+     * Salvează tipul de stream care va fi folosit pentru vizionare
      */
-    fun setUsername(context: Context, username: String) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_USERNAME, username).apply()
+    fun setStreamType(context: Context, streamType: String) {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+        prefs.edit().putString("stream_type", streamType).apply()
     }
 }

@@ -92,7 +92,7 @@ namespace StreamNetServer.Services
                 }
                 else
                 {
-                    _logger.LogError("Fișierul executabil al serverului RTMP nu a fost găsit");
+                    _logger.LogError("Fisierul executabil al serverului RTMP nu a fost gasit");
                 }
             }
             catch (Exception ex)

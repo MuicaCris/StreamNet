@@ -44,22 +44,22 @@ fun MainMenu(navController: NavController) {
         coroutineScope.launch {
             try {
                 val fetchedStreams = ApiClient.fetchStreams()
-                Log.d(TAG, "Stream-uri încărcate din API: ${fetchedStreams.size}")
+                Log.d(TAG, "Streams loaded from API: ${fetchedStreams.size}")
                 streams = fetchedStreams
                 isLoading = false
                 lastRefreshTime = System.currentTimeMillis()
             } catch (e: Exception) {
-                Log.e(TAG, "Eroare la încărcarea stream-urilor din API", e)
-                errorMessage = "Eroare API: ${e.message}"
+                Log.e(TAG, "Error loading streams from API", e)
+                errorMessage = "API Error: ${e.message}"
                 isLoading = false
             }
         }
     }
 
     LaunchedEffect(Unit) {
-        Log.d(TAG, "Pornire DirectStreamDiscovery")
+        Log.d(TAG, "Starting DirectStreamDiscovery")
         DirectStreamDiscovery.startDiscovery { discoveredStreams ->
-            Log.d(TAG, "Stream-uri descoperite direct: ${discoveredStreams.size}")
+            Log.d(TAG, "Directly discovered streams: ${discoveredStreams.size}")
             streams = discoveredStreams
             isLoading = false
             lastRefreshTime = System.currentTimeMillis()
@@ -68,7 +68,7 @@ fun MainMenu(navController: NavController) {
 
     DisposableEffect(Unit) {
         onDispose {
-            Log.d(TAG, "Oprire DirectStreamDiscovery")
+            Log.d(TAG, "Stopping DirectStreamDiscovery")
             DirectStreamDiscovery.stopDiscovery()
         }
     }
@@ -87,12 +87,12 @@ fun MainMenu(navController: NavController) {
                         value = searchText,
                         onValueChange = { searchText = it },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Caută...") },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Căutare") },
+                        placeholder = { Text("Search...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                         trailingIcon = {
                             if (searchText.isNotEmpty()) {
                                 IconButton(onClick = { searchText = "" }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Șterge")
+                                    Icon(Icons.Default.Close, contentDescription = "Clear")
                                 }
                             }
                         }
@@ -109,12 +109,11 @@ fun MainMenu(navController: NavController) {
                         onClick = {
                             useDirectDiscovery = !useDirectDiscovery
                             loadStreams()
-
                         }
                     ) {
                         Icon(
                             if (useDirectDiscovery) Icons.Default.Check else Icons.Default.LocationOn,
-                            contentDescription = "Metodă descoperire"
+                            contentDescription = "Discovery method"
                         )
                     }
 
@@ -127,7 +126,7 @@ fun MainMenu(navController: NavController) {
                             }
                         }
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Reîmprospătează")
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
 
                     IconButton(onClick = { navController.navigate("loginMenu") }) {
@@ -150,7 +149,7 @@ fun MainMenu(navController: NavController) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Bine ai venit la StreamNet!",
+                    text = "Welcome to StreamNet!",
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center
@@ -170,18 +169,18 @@ fun MainMenu(navController: NavController) {
                             MaterialTheme.colorScheme.primary
                     )
                 ) {
-                    Text(if (ApiClient.hasLocalStream()) "Continua Stream-ul" else "Start Stream")
+                    Text(if (ApiClient.hasLocalStream()) "Continue Stream" else "Start Stream")
                 }
 
                 if (ApiClient.hasLocalStream()) {
                     Text(
-                        text = "Stream-ul tau este activ!",
+                        text = "Your stream is active!",
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(top = 8.dp)
                     )
 
                     Text(
-                        text = "Cheie: ${ApiClient.getLocalStreamKey()}",
+                        text = "Key: ${ApiClient.getLocalStreamKey()}",
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(top = 4.dp)
                     )
@@ -195,12 +194,12 @@ fun MainMenu(navController: NavController) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Stream-uri disponibile:",
+                        text = "Available streams:",
                         style = MaterialTheme.typography.titleMedium
                     )
 
                     Text(
-                        text = "Ultima actualizare: ${java.text.SimpleDateFormat("HH:mm:ss").format(java.util.Date(lastRefreshTime))}",
+                        text = "Last update: ${java.text.SimpleDateFormat("HH:mm:ss").format(java.util.Date(lastRefreshTime))}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -237,7 +236,7 @@ fun MainMenu(navController: NavController) {
                                     }
                                 }
                             ) {
-                                Text("Reincearca")
+                                Text("Retry")
                             }
                         }
                     }
@@ -266,7 +265,7 @@ fun MainMenu(navController: NavController) {
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         Text(
-                                            text = "Nu există stream-uri disponibile",
+                                            text = "No streams available",
                                             textAlign = TextAlign.Center
                                         )
 
@@ -281,7 +280,7 @@ fun MainMenu(navController: NavController) {
                                                 }
                                             }
                                         ) {
-                                            Text("Reimprospateaza")
+                                            Text("Refresh")
                                         }
                                     }
                                 }
@@ -294,7 +293,7 @@ fun MainMenu(navController: NavController) {
                             if (filteredStreams.isEmpty()) {
                                 item {
                                     Text(
-                                        text = "Nu s-au gasit stream-uri care sa corespunda cautarii",
+                                        text = "No streams matching search",
                                         modifier = Modifier.padding(16.dp)
                                     )
                                 }
@@ -322,7 +321,6 @@ fun StreamItem(stream: LiveStream, navController: NavController) {
             .padding(vertical = 8.dp)
             .clickable {
                 try {
-                    // Convert the ID to String for navigation
                     val streamIdString = stream.id.toString()
                     navController.navigate("watchStream/${streamIdString}")
                 } catch (e: Exception) {
@@ -330,7 +328,6 @@ fun StreamItem(stream: LiveStream, navController: NavController) {
                 }
             }
     ) {
-        // Rest of your StreamItem content...
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -344,7 +341,7 @@ fun StreamItem(stream: LiveStream, navController: NavController) {
                     Badge(
                         containerColor = MaterialTheme.colorScheme.error
                     ) {
-                        Text("STREAM-UL TAU")
+                        Text("YOUR STREAM")
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -383,7 +380,6 @@ fun StreamItem(stream: LiveStream, navController: NavController) {
                 Button(
                     onClick = {
                         try {
-                            // Convert the ID to String for navigation
                             val streamIdString = stream.id.toString()
                             navController.navigate("watchStream/${streamIdString}")
                         } catch (e: Exception) {
@@ -391,7 +387,7 @@ fun StreamItem(stream: LiveStream, navController: NavController) {
                         }
                     }
                 ) {
-                    Text("Vizionează")
+                    Text("Watch")
                 }
             }
         }

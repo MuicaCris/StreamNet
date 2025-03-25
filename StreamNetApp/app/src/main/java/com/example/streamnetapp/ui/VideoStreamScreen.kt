@@ -36,7 +36,7 @@ fun LiveStreamUI() {
     var isStreaming by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
-    var streamTitle by remember { mutableStateOf("Stream-ul meu") }
+    var streamTitle by remember { mutableStateOf("My stream") }
     var usePublicServer by remember { mutableStateOf(Settings.usePublicServer(context)) }
     val coroutineScope = rememberCoroutineScope()
 
@@ -69,16 +69,15 @@ fun LiveStreamUI() {
 
         if (allGranted) {
             errorMessage = null
-            Log.d(TAG, "Toate permisiunile sunt acordate")
+            Log.d(TAG, "All permissions granted")
         } else {
-            errorMessage = "Permisiuni necesare refuzate! Apasă pe reîncercați."
-            Log.e(TAG, "Nu toate permisiunile sunt acordate")
+            errorMessage = "Required permissions denied! Tap retry."
+            Log.e(TAG, "Not all permissions granted")
         }
     }
 
     LaunchedEffect(Unit) {
         isStreaming = ApiClient.hasLocalStream()
-
         checkPermissions()
     }
 
@@ -89,11 +88,11 @@ fun LiveStreamUI() {
         if (allGranted) {
             errorMessage = null
             hasAllPermissions = true
-            Log.d(TAG, "Permisiuni acordate de utilizator")
+            Log.d(TAG, "User granted permissions")
         } else {
-            errorMessage = "Permisiuni necesare refuzate! Apasă pe reîncercați."
+            errorMessage = "Required permissions denied! Tap retry."
             hasAllPermissions = false
-            Log.e(TAG, "Utilizatorul a refuzat unele permisiuni")
+            Log.e(TAG, "User denied some permissions")
         }
     }
 
@@ -117,7 +116,7 @@ fun LiveStreamUI() {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Configurare Stream",
+                    text = "Stream Setup",
                     style = MaterialTheme.typography.titleMedium
                 )
 
@@ -126,7 +125,7 @@ fun LiveStreamUI() {
                 OutlinedTextField(
                     value = streamTitle,
                     onValueChange = { streamTitle = it },
-                    label = { Text("Titlu stream") },
+                    label = { Text("Stream title") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
@@ -138,7 +137,7 @@ fun LiveStreamUI() {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Folosește server public:")
+                    Text("Use public server:")
                     Switch(
                         checked = usePublicServer,
                         onCheckedChange = {
@@ -146,7 +145,7 @@ fun LiveStreamUI() {
                                 usePublicServer = it
                                 Settings.setUsePublicServer(context, it)
                             } else {
-                                errorMessage = "Nu poti schimba serverul in timpul streaming-ului!"
+                                errorMessage = "Cannot change server while streaming!"
                             }
                         }
                     )
@@ -155,7 +154,7 @@ fun LiveStreamUI() {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Cheie stream: $streamKey",
+                    text = "Stream key: $streamKey",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
@@ -197,7 +196,7 @@ fun LiveStreamUI() {
                         ) {
                             Icon(Icons.Default.Refresh, contentDescription = null)
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Reincearca")
+                            Text("Retry")
                         }
                     }
                 }
@@ -227,16 +226,15 @@ fun LiveStreamUI() {
                                 this,
                                 object : ConnectCheckerRtmp {
                                     override fun onConnectionStartedRtmp(rtmpUrl: String) {
-                                        Log.i(TAG, "Conexiune inceputa: $rtmpUrl")
-                                        statusMessage = "Se conecteaza la server..."
+                                        Log.i(TAG, "Connection started: $rtmpUrl")
+                                        statusMessage = "Connecting to server..."
                                     }
                                     override fun onConnectionSuccessRtmp() {
-                                        Log.i(TAG, "Conexiune reusita!")
-                                        statusMessage = "Stream activ!"
+                                        Log.i(TAG, "Connection successful!")
+                                        statusMessage = "Stream active!"
                                         isStreaming = true
 
                                         ApiClient.setLocalStreamKey(streamKey)
-
                                         DirectStreamDiscovery.registerLocalStream(streamKey, streamTitle)
 
                                         coroutineScope.launch {
@@ -246,55 +244,52 @@ fun LiveStreamUI() {
                                                     title = streamTitle,
                                                     streamerId = 1
                                                 )
-                                                Log.d(TAG, "Stream inregistrat pe server API: $registered")
+                                                Log.d(TAG, "Stream registered on API server: $registered")
                                             } catch (e: Exception) {
-                                                Log.e(TAG, "Eroare la inregistrarea pe server API", e)
+                                                Log.e(TAG, "Error registering on API server", e)
                                             }
                                         }
                                     }
                                     override fun onConnectionFailedRtmp(reason: String) {
-                                        Log.e(TAG, "Conexiune eșuată: $reason")
-                                        statusMessage = "Conexiune eșuată: $reason"
-                                        errorMessage = "Eroare: $reason"
+                                        Log.e(TAG, "Connection failed: $reason")
+                                        statusMessage = "Connection failed: $reason"
+                                        errorMessage = "Error: $reason"
                                         isStreaming = false
 
                                         ApiClient.setLocalStreamKey(null)
-
                                         DirectStreamDiscovery.unregisterLocalStream()
                                     }
                                     override fun onNewBitrateRtmp(bitrate: Long) {
-                                        Log.d(TAG, "Bitrate nou: $bitrate")
+                                        Log.d(TAG, "New bitrate: $bitrate")
                                     }
                                     override fun onDisconnectRtmp() {
-                                        Log.i(TAG, "Deconectat")
-                                        statusMessage = "Stream oprit"
+                                        Log.i(TAG, "Disconnected")
+                                        statusMessage = "Stream stopped"
                                         isStreaming = false
 
                                         ApiClient.setLocalStreamKey(null)
-
                                         DirectStreamDiscovery.unregisterLocalStream()
 
                                         coroutineScope.launch {
                                             try {
-                                                val deactivated = ApiClient.deactivateStream(streamKey)
-                                                Log.d(TAG, "Stream dezactivat pe server API: $deactivated")
+                                                val deactivated = ApiClient.stopStream(streamKey)
+                                                Log.d(TAG, "Stream stopped on server: $deactivated")
                                             } catch (e: Exception) {
-                                                Log.e(TAG, "Eroare la dezactivarea pe server API", e)
+                                                Log.e(TAG, "Error stopping stream on server", e)
                                             }
                                         }
                                     }
                                     override fun onAuthErrorRtmp() {
-                                        Log.e(TAG, "Eroare de autentificare")
-                                        statusMessage = "Eroare de autentificare"
-                                        errorMessage = "Eroare de autentificare"
+                                        Log.e(TAG, "Authentication error")
+                                        statusMessage = "Authentication error"
+                                        errorMessage = "Authentication error"
                                         isStreaming = false
 
                                         ApiClient.setLocalStreamKey(null)
-
                                         DirectStreamDiscovery.unregisterLocalStream()
                                     }
                                     override fun onAuthSuccessRtmp() {
-                                        Log.i(TAG, "Autentificare reușită")
+                                        Log.i(TAG, "Authentication successful")
                                     }
                                 }
                             )
@@ -314,14 +309,14 @@ fun LiveStreamUI() {
                 Button(
                     onClick = {
                         if (rtmpCamera == null) {
-                            errorMessage = "Camera nu este initializata!"
+                            errorMessage = "Camera not initialized!"
                             return@Button
                         }
 
                         if (!isStreaming) {
                             try {
-                                Log.d(TAG, "Pregatire stream...")
-                                statusMessage = "Pregatire stream..."
+                                Log.d(TAG, "Preparing stream...")
+                                statusMessage = "Preparing stream..."
 
                                 rtmpCamera?.prepareVideo(
                                     640, 480,
@@ -336,38 +331,36 @@ fun LiveStreamUI() {
                                     true,
                                 )
 
-                                Log.d(TAG, "Incepe stream-ul catre: $streamUrl")
+                                Log.d(TAG, "Starting stream to: $streamUrl")
                                 rtmpCamera?.startStream(streamUrl)
 
                                 if (rtmpCamera?.isStreaming == true) {
-                                    Log.i(TAG, "Stream-ul a inceput cu succes!")
+                                    Log.i(TAG, "Stream started successfully!")
                                 } else {
-                                    Log.e(TAG, "Stream-ul nu a inceput!")
-                                    errorMessage = "Stream-ul nu a putut fi pornit"
+                                    Log.e(TAG, "Stream failed to start!")
+                                    errorMessage = "Could not start stream"
                                 }
                             } catch (e: Exception) {
-                                Log.e(TAG, "Eroare la pornirea stream-ului", e)
-                                errorMessage = "Eroare la pornirea stream-ului: ${e.message}"
+                                Log.e(TAG, "Error starting stream", e)
+                                errorMessage = "Error starting stream: ${e.message}"
                             }
                         } else {
-                            Log.d(TAG, "Opreste stream-ul...")
+                            Log.d(TAG, "Stopping stream...")
                             rtmpCamera?.stopStream()
-                            statusMessage = "Stream oprit"
-                            Log.i(TAG, "Stream-ul a fost oprit.")
-
-                            ApiClient.setLocalStreamKey(null)
-
-                            DirectStreamDiscovery.unregisterLocalStream()
+                            statusMessage = "Stream stopped"
+                            Log.i(TAG, "Stream stopped.")
 
                             coroutineScope.launch {
                                 try {
-                                    val deactivated = ApiClient.deactivateStream(streamKey)
-                                    Log.d(TAG, "Stream dezactivat pe server API: $deactivated")
+                                    val deactivated = ApiClient.stopStream(streamKey)
+                                    Log.d(TAG, "Stream stopped on server: $deactivated")
                                 } catch (e: Exception) {
-                                    Log.e(TAG, "Eroare la dezactivarea pe server API", e)
+                                    Log.e(TAG, "Error stopping stream on server", e)
                                 }
                             }
 
+                            ApiClient.setLocalStreamKey(null)
+                            DirectStreamDiscovery.unregisterLocalStream()
                             isStreaming = false
                         }
                     },
@@ -382,10 +375,10 @@ fun LiveStreamUI() {
                 Button(
                     onClick = {
                         rtmpCamera?.switchCamera()
-                        Log.d(TAG, "Camera comutata")
+                        Log.d(TAG, "Camera switched")
                     }
                 ) {
-                    Text("Schimba Camera")
+                    Text("Switch Camera")
                 }
             }
 
@@ -398,16 +391,16 @@ fun LiveStreamUI() {
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = "Stream intre dispozitive",
+                        text = "Device-to-device streaming",
                         style = MaterialTheme.typography.titleSmall
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "• Asigura-te ca ambele dispozitive sunt conectate la internet\n" +
-                                "• Pe dispozitivul care vizioneaza, activează 'Direct' din bara de sus\n" +
-                                "• Stream-ul tau va aparea automat in lista de stream-uri",
+                        text = "• Make sure both devices are connected to internet\n" +
+                                "• On viewing device, enable 'Direct' from top bar\n" +
+                                "• Your stream will appear automatically in stream list",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -420,7 +413,7 @@ fun LiveStreamUI() {
                 )
             ) {
                 Text(
-                    text = "Dispozitivul nu are camera!",
+                    text = "Device has no camera!",
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier.padding(16.dp),
                     textAlign = TextAlign.Center
@@ -435,7 +428,7 @@ fun LiveStreamUI() {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Aplicatia are nevoie de permisiuni pentru a accesa camera și microfonul",
+                        text = "App needs permissions to access camera and microphone",
                         textAlign = TextAlign.Center
                     )
 
@@ -446,36 +439,40 @@ fun LiveStreamUI() {
                             permissionLauncher.launch(requiredPermissions)
                         }
                     ) {
-                        Text("Solicit permisiuni")
+                        Text("Request permissions")
                     }
                 }
             }
         }
     }
 
-//    DisposableEffect(Unit) {
-//        onDispose {
-//            Log.d(TAG, "Eliberam resursele")
-//            rtmpCamera?.apply {
-//                if (isStreaming) {
-//                    stopStream()
-//                    Log.d(TAG, "Stream oprit la parasirea ecranului")
-//
-//                    ApiClient.setLocalStreamKey(null)
-//                    DirectStreamDiscovery.unregisterLocalStream()
-//
-//                    coroutineScope.launch {
-//                        try {
-//                            val deactivated = ApiClient.deactivateStream(streamKey)
-//                            Log.d(TAG, "Stream dezactivat pe server API: $deactivated")
-//                        } catch (e: Exception) {
-//                            Log.e(TAG, "Eroare la dezactivarea pe server API", e)
-//                        }
-//                    }
-//                }
-//                stopPreview()
-//            }
-//            rtmpCamera = null
-//        }
-//    }
+    DisposableEffect(Unit) {
+        onDispose {
+            Log.d(TAG, "Releasing resources")
+            val currentStreamKey = ApiClient.getLocalStreamKey()
+
+            rtmpCamera?.apply {
+                if (isStreaming) {
+                    stopStream()
+                    Log.d(TAG, "Stream stopped when leaving screen")
+
+                    coroutineScope.launch {
+                        if (currentStreamKey != null) {
+                            try {
+                                val stopped = ApiClient.stopStream(currentStreamKey)
+                                Log.d(TAG, "Stream stopped on server: $stopped")
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error stopping stream on server", e)
+                            }
+                        }
+                    }
+
+                    ApiClient.setLocalStreamKey(null)
+                    DirectStreamDiscovery.unregisterLocalStream()
+                }
+                stopPreview()
+            }
+            rtmpCamera = null
+        }
+    }
 }

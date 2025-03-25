@@ -55,7 +55,7 @@ namespace StreamNetServer.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"Eroare la obtinerea stream-ului cu cheia {streamKey}");
-                return StatusCode(500, "Eroare internă de server");
+                return StatusCode(500, "Eroare interna de server");
             }
         }
 
@@ -85,7 +85,7 @@ namespace StreamNetServer.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Eroare la pornirea stream-ului");
-                return StatusCode(500, "Eroare internă de server");
+                return StatusCode(500, "Eroare interna de server");
             }
         }
 
@@ -112,7 +112,7 @@ namespace StreamNetServer.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Eroare la oprirea stream-ului");
-                return StatusCode(500, "Eroare internă de server");
+                return StatusCode(500, "Eroare interna de server");
             }
         }
 
@@ -126,8 +126,8 @@ namespace StreamNetServer.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"Eroare la verificarea stării stream-ului {streamKey}");
-                return StatusCode(500, "Eroare internă de server");
+                _logger.LogError(ex, $"Eroare la verificarea starii stream-ului {streamKey}");
+                return StatusCode(500, "Eroare interna de server");
             }
         }
     }

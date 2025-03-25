@@ -188,3 +188,6 @@ C:\StreamNet\StreamNet\Server\StreamNetServer\StreamNetServer\obj\Debug\net9.0\r
 C:\StreamNet\StreamNet\Server\StreamNetServer\StreamNetServer\obj\Debug\net9.0\StreamNetServer.pdb
 C:\StreamNet\StreamNet\Server\StreamNetServer\StreamNetServer\obj\Debug\net9.0\StreamNetServer.genruntimeconfig.cache
 C:\StreamNet\StreamNet\Server\StreamNetServer\StreamNetServer\obj\Debug\net9.0\ref\StreamNetServer.dll
+C:\StreamNet\StreamNet\Server\StreamNetServer\StreamNetServer\bin\Debug\net9.0\Swashbuckle.AspNetCore.Swagger.dll
+C:\StreamNet\StreamNet\Server\StreamNetServer\StreamNetServer\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerGen.dll
+C:\StreamNet\StreamNet\Server\StreamNetServer\StreamNetServer\bin\Debug\net9.0\Swashbuckle.AspNetCore.SwaggerUI.dll

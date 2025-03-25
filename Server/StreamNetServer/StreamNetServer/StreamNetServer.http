@@ -1,6 +1,31 @@
 @StreamNetServer_HostAddress = http://localhost:5202
 
-GET {{StreamNetServer_HostAddress}}/weatherforecast/
+### Obtine toate stream-urile active
+GET {{StreamNetServer_HostAddress}}/api/Streams
 Accept: application/json
 
-###
+### Obtine un stream specific folosind cheia
+GET {{StreamNetServer_HostAddress}}/api/Streams/test-stream-key
+Accept: application/json
+
+### Verifica daca un stream este activ
+GET {{StreamNetServer_HostAddress}}/api/Streams/active/test-stream-key
+Accept: application/json
+
+### Inregistreaza un stream nou
+POST {{StreamNetServer_HostAddress}}/api/Streams/start
+Content-Type: application/json
+
+{
+  "streamKey": "test-stream-key",
+  "title": "Stream de test",
+  "streamerId": 1
+}
+
+### Opreste un stream
+POST {{StreamNetServer_HostAddress}}/api/Streams/stop
+Content-Type: application/json
+
+{
+  "streamKey": "test-stream-key"
+}
